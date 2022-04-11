@@ -182,17 +182,26 @@ def unzip_strip_archive(strip,tmp_dir):
         zip_list = glob.glob(f'{archive_dir}*{strip_code}*.zip')
         zip_list.sort()
         if len(zip_list) == 0:
-            print('No zip files found!')
-            return None,None
-        unzipped_dir = f'{tmp_dir}{strip_code}/'
-        os.mkdir(unzipped_dir)
-        print('Unzipping...')
-        for zip_file in zip_list:
-            unzip_command = f'unzip {zip_file} -d {unzipped_dir}{zip_file.split("/")[-1].split(".zip")[0]}/'
-            subprocess.run(unzip_command,shell=True)
-        print('Unzipping done.')
-        zip_ID = 'multiple'
-        return unzipped_dir,zip_ID
+            unzipped_archive_dir = glob.glob(f'{archive_dir}{"_".join(strip_name.split("_")[0:3])}*')[0]
+            if len(unzipped_archive_dir) == 0:
+                print('No zip files found!')
+                return None,None
+            else:
+                unzipped_dir = f'{tmp_dir}{strip_code}/'
+                os.mkdir(unzipped_dir)
+                copy_command = f'cp -r {unzipped_archive_dir}/* {unzipped_dir}'
+                print('Copying already unzipped files...')
+                subprocess.run(copy_command,shell=True)
+        else:
+            unzipped_dir = f'{tmp_dir}{strip_code}/'
+            os.mkdir(unzipped_dir)
+            print('Unzipping...')
+            for zip_file in zip_list:
+                unzip_command = f'unzip {zip_file} -d {unzipped_dir}{zip_file.split("/")[-1].split(".zip")[0]}/'
+                subprocess.run(unzip_command,shell=True)
+            print('Unzipping done.')
+            zip_ID = 'multiple'
+            return unzipped_dir,zip_ID
     elif len(zip_list_direct_match) > 1:
         print('More than one zip file with a direct match found!')
         return None,None
