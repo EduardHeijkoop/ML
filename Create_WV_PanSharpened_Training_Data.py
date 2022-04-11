@@ -14,6 +14,7 @@ import glob
 import shutil
 import warnings
 import re
+import xml.etree.ElementTree as ET
 
 def get_extent(gt,cols,rows):
     ''' Return list of corner coordinates from a geotransform
@@ -192,6 +193,8 @@ def unzip_strip_archive(strip,tmp_dir):
                 copy_command = f'cp -r {unzipped_archive_dir}/* {unzipped_dir}'
                 print('Copying already unzipped files...')
                 subprocess.run(copy_command,shell=True)
+                zip_ID = 'single_unzipped'
+                return unzipped_dir,zip_ID
         else:
             unzipped_dir = f'{tmp_dir}{strip_code}/'
             os.mkdir(unzipped_dir)
@@ -226,6 +229,23 @@ def get_centroid_imd_file(imd):
                 lrlon = float(line.split('LRLon =')[1].replace(';',''))
             if 'LRLat =' in line:
                 lrlat = float(line.split('LRLat =')[1].replace(';',''))
+    lon_center = np.mean((ullon,urlon,lllon,lrlon))
+    lat_center = np.mean((ullat,urlat,lllat,lrlat))
+    outline = shapely.geometry.Polygon([(ullon,ullat),(urlon,urlat),(lrlon,lrlat),(lllon,lllat),(ullon,ullat)])
+    return lon_center,lat_center,outline
+
+
+def get_centroid_xml_file(xml):
+    xml_tree = ET.parse(xml)
+    xml_root = xml_tree.getroot()
+    ullon = float(xml_root.findall('IMD/BAND_P/ULLON')[0].text)
+    ullat = float(xml_root.findall('IMD/BAND_P/ULLAT')[0].text)
+    urlon = float(xml_root.findall('IMD/BAND_P/URLON')[0].text)
+    urlat = float(xml_root.findall('IMD/BAND_P/URLAT')[0].text)
+    lllon = float(xml_root.findall('IMD/BAND_P/LLLON')[0].text)
+    lllat = float(xml_root.findall('IMD/BAND_P/LLLAT')[0].text)
+    lrlon = float(xml_root.findall('IMD/BAND_P/LRLON')[0].text)
+    lrlat = float(xml_root.findall('IMD/BAND_P/LRLAT')[0].text)
     lon_center = np.mean((ullon,urlon,lllon,lrlon))
     lat_center = np.mean((ullat,urlat,lllat,lrlat))
     outline = shapely.geometry.Polygon([(ullon,ullat),(urlon,urlat),(lrlon,lrlat),(lllon,lllat),(ullon,ullat)])
@@ -395,23 +415,25 @@ def main():
             print('No archives found! Skipping!')
             continue
         if zip_ID == 'single':
-            imd_files = glob.glob(f'{unzipped_dir}/*/*/*PAN/*.IMD')
+            xml_files = glob.glob(f'{unzipped_dir}/*/*/*PAN/*.XML')
         elif zip_ID == 'multiple':
-            imd_files = glob.glob(f'{unzipped_dir}/*/*P1BS*/*.IMD')
-        imd_files.sort()
+            xml_files = glob.glob(f'{unzipped_dir}/*/*P1BS*/*.XML')
+        elif zip_ID == 'single_unzipped':
+            xml_files = glob.glob(f'{unzipped_dir}/*.xml')
+        xml_files.sort()
         d_min = 1e20
-        for imd in imd_files:
-            lon_center_imd,lat_center_imd,outline_imd = get_centroid_imd_file(imd)
+        for xml in xml_files:
+            lon_center_xml,lat_center_xml,outline_xml = get_centroid_xml_file(xml)
             if clip_flag == True:
-                d_imd = great_circle_distance(lon_center_imd,lat_center_imd,clip_lon_center,clip_lat_center,R_E)
+                d_xml = great_circle_distance(lon_center_xml,lat_center_xml,clip_lon_center,clip_lat_center,R_E)
             else:
-                d_imd = great_circle_distance(lon_center_imd,lat_center_imd,lon_loc,lat_loc,R_E)
-            d_min = np.min((d_min,d_imd))
-            if d_imd == d_min:
-                imd_select = imd
-                lon_center_imd_select,lat_center_imd_select,outline_imd_select = lon_center_imd,lat_center_imd,outline_imd
+                d_xml = great_circle_distance(lon_center_xml,lat_center_xml,lon_loc,lat_loc,R_E)
+            d_min = np.min((d_min,d_xml))
+            if d_xml == d_min:
+                xml_select = xml
+                lon_center_xml_select,lat_center_xml_select,outline_xml_select = lon_center_xml,lat_center_xml,outline_xml
 
-        pan_file = imd_select.replace('.IMD','.NTF')
+        pan_file = xml_select.replace('.XML','.NTF').replace('.xml','.ntf')
         mul_file = pan_file.replace('PAN','MUL').replace('-P1BS','-M1BS')
         pan_orthorectified_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_pan_orthorectified.tif'
         mul_orthorectified_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_mul_orthorectified.tif'
@@ -425,13 +447,14 @@ def main():
             print('ERROR! Cannot find either the specified PAN or MUL files!')
             print(f'PAN: {pan_file}')
             print(f'MUL: {mul_file}')
-            sys.exit
+            shutil.rmtree(unzipped_dir)
+            continue
 
         lon_min_strip,lon_max_strip,lat_min_strip,lat_max_strip = get_raster_extents(strip)
         outline_strip = shapely.geometry.Polygon([(lon_min_strip,lat_max_strip),(lon_max_strip,lat_max_strip),(lon_max_strip,lat_min_strip),(lon_min_strip,lat_min_strip),(lon_min_strip,lat_max_strip)])
-        intersection_strip_imd = outline_imd_select.intersection(outline_strip)
+        intersection_strip_imd = outline_xml_select.intersection(outline_strip)
         lon_outline_strip,lat_outline_strip = get_lonlat_geometry(outline_strip)
-        lon_outline_imd,lat_outline_imd = get_lonlat_geometry(outline_imd_select)
+        lon_outline_imd,lat_outline_imd = get_lonlat_geometry(outline_xml_select)
         lon_intersection_strip_imd,lat_intersection_strip_imd = get_lonlat_geometry(intersection_strip_imd)
         lon_min_osm = np.nanmin(lon_intersection_strip_imd)
         lon_max_osm = np.nanmax(lon_intersection_strip_imd)
