@@ -2,10 +2,51 @@ import tensorflow as tf
 import numpy as np
 # import geopandas as gpd
 
+class InstanceNormalization(tf.keras.layers.Layer):
+  #Instance Normalization Layer (https://arxiv.org/abs/1607.08022).
+    def __init__(self, epsilon=1e-5):
+        super(InstanceNormalization, self).__init__()
+        self.epsilon = epsilon
+
+    def build(self, input_shape):
+        self.scale = self.add_weight(
+            name='scale',
+            shape=input_shape[-1:],
+            initializer=tf.random_normal_initializer(1., 0.02),
+            trainable=True)
+
+        self.offset = self.add_weight(
+            name='offset',
+            shape=input_shape[-1:],
+            initializer='zeros',
+            trainable=True)
+
+    def call(self, x):
+        mean, variance = tf.nn.moments(x, axes=[1, 2], keepdims=True)
+        inv = tf.math.rsqrt(variance + self.epsilon)
+        normalized = (x - mean) * inv
+        return self.scale * normalized + self.offset
+
+class Custom_Generator(tf.keras.utils.Sequence):
+    def __init__(self,image_filenames,labels,batch_size):
+        self.image_filenames = image_filenames
+        self.labels = labels
+        self.batch_size = batch_size
+
+    def __len__(self):
+        return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
+
+    def __getitem__(self,idx):
+        batch_x = self.image_filenames[idx * self.batch_size : (idx+1) * self.batch_size]
+        batch_y = self.labels[idx * self.batch_size : (idx+1) * self.batch_size]
+        new_x,new_y = load_images(batch_x,batch_y)
+        # return batch_x,batch_y
+        #edit this
+        return new_x,new_y
 
 
 
-def build_model(input_shape):
+def build_resunet_model(input_shape):
     inputs = tf.keras.layers.Input(input_shape)
     #ENCODING
     x = conv_BN_activation_block(inputs, 64, (3,3), strides=1, padding='same', activation='relu')
@@ -75,9 +116,48 @@ def BN_activation_block(inputs, activation):
     return x
 
 def main():
+    gpus = tf.config.list_physical_devices('GPU')
+    tf.config.set_visible_devices(gpus[3],'GPU')
+
+    LEARNING_RATE = 0.001 #Default for TF is 0.001
+    EPSILON = 1e-7 #Default is 1e-7
+    BATCH_SIZE = 4
+    main_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/'
+    training_data_dir = f'{main_dir}Training_Data/'
+    labels_dir = f'{main_dir}Labels/'
+    models_dir = f'{main_dir}Models/'
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE,epsilon=EPSILON)
+    loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+    # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+    #TO DO:
+    '''
+    Load data
+    normalize data (11 bit -> divide by 2047)
+    split data into train/validation/test, assign to files, not arrays
+        e.g. Djibouti is validation, NY in train, etc
+        need a lot more training data
+    create training and validation batch generators
+    select loss: binary crossentropy or sparse categorical crossentropy
+
+    '''
+
+
+
     input_shape = (224,224,3)
-    model = build_model(input_shape)
-    model.summary()
+    model = build_resunet_model(input_shape)
+    # model.summary()
+    model.compile(optimizer=optimizer,loss=loss,metrics=['accuracy'])
+    model.fit(training_batch_generator,
+        steps_per_epoch = int(len(train_list) / BATCH_SIZE),
+        epochs = 100,
+        verbose = 1,
+        validation_data = validation_batch_generator,
+        validation_steps = int(len(val_list) / BATCH_SIZE)
+    )
+    model.save('resunet_model_wv_pansharpened')
+
 
 if __name__ == '__main__':
     main()

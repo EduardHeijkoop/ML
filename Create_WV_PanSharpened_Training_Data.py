@@ -101,7 +101,7 @@ def get_osm_buildings(lon_min,lon_max,lat_min,lat_max):
     api = overpy.Overpass()
     bbox = str(lat_min)+','+str(lon_min)+','+str(lat_max)+','+str(lon_max)
     result = api.query("""
-    [out:json][timeout:900][maxsize:1073741824];
+    [out:json][timeout:2000][maxsize:1073741824];
     (
     way["building"]("""+bbox+""");
     relation["building"]("""+bbox+""");
