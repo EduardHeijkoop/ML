@@ -467,8 +467,8 @@ def main():
         gdf_osm = overpy_to_gdf(osm_data)
         gdf_osm = gdf_osm.buffer(0)
 
-        orthorectify_pan_command = f'gdalwarp -q -co "COMPRESS=LZW" -co "BIGTIFF=IF_SAFER" -co "TILED=YES" -t_srs EPSG:{strip_epsg} -r cubic -et 0.01 -rpc -to "RPC_DEM={strip}" {pan_file} {pan_orthorectified_file}'
-        orthorectify_mul_command = f'gdalwarp -q -co "COMPRESS=LZW" -co "BIGTIFF=IF_SAFER" -co "TILED=YES" -t_srs EPSG:{strip_epsg} -r cubic -et 0.01 -rpc -to "RPC_DEM={strip}" {mul_file} {mul_orthorectified_file}'
+        orthorectify_pan_command = f'gdalwarp -q -co "COMPRESS=LZW" -co "BIGTIFF=IF_SAFER" -co "TILED=YES" -s_srs EPSGL{strip_epsg} -t_srs EPSG:{strip_epsg} -r cubic -et 0.01 -rpc -to "RPC_DEM={strip}" {pan_file} {pan_orthorectified_file}'
+        orthorectify_mul_command = f'gdalwarp -q -co "COMPRESS=LZW" -co "BIGTIFF=IF_SAFER" -co "TILED=YES" -s_srs EPSG:{strip_epsg} -t_srs EPSG:{strip_epsg} -r cubic -et 0.01 -rpc -to "RPC_DEM={strip}" {mul_file} {mul_orthorectified_file}'
         pansharpen_command = f'gdal_pansharpen.py -q -b 5 -b 3 -b 2 -co compress=lzw -co bigtiff=if_safer -bitdepth 11 {pan_orthorectified_file} {mul_orthorectified_file} {tmp_pansharpened_orthorectified_full_res_file}'
         print('Orthorectifying Panchromatic Image...')
         subprocess.run(orthorectify_pan_command,shell=True)
