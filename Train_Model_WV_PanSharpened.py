@@ -16,20 +16,20 @@ def build_model(input_shape):
     x = BN_activation_block(s1, 'relu')
     x = conv_BN_activation_block(x, 128, (3,3), strides=2, padding='same', activation='relu')
     x = tf.keras.layers.Conv2D(128, (3,3), strides=1, padding='same')(x)
-    s = tf.keras.layers.Conv2D(128, (1,1), strides=2, padding='same')(x)
+    s = tf.keras.layers.Conv2D(128, (1,1), strides=2, padding='same')(s1)
     s2 = tf.keras.layers.Add()([x, s])
 
     x = BN_activation_block(s2, 'relu')
     x = conv_BN_activation_block(x, 256, (3,3), strides=2, padding='same', activation='relu')
     x = tf.keras.layers.Conv2D(256, (3,3), strides=1, padding='same')(x)
-    s = tf.keras.layers.Conv2D(256, (1,1), strides=2, padding='same')(x)
+    s = tf.keras.layers.Conv2D(256, (1,1), strides=2, padding='same')(s2)
     s3 = tf.keras.layers.Add()([x, s])
 
     #BRIDGE
     x = BN_activation_block(s3, 'relu')
     x = conv_BN_activation_block(x, 512, (3,3), strides=2, padding='same', activation='relu')
     x = tf.keras.layers.Conv2D(512, (3,3), strides=1, padding='same')(x)
-    s = tf.keras.layers.Conv2D(512, (1,1), strides=2, padding='same')(x)
+    s = tf.keras.layers.Conv2D(512, (1,1), strides=2, padding='same')(s3)
     b = tf.keras.layers.Add()([x, s])
 
     #DECODING
@@ -46,7 +46,7 @@ def build_model(input_shape):
     x = BN_activation_block(d2, 'relu')
     x = conv_BN_activation_block(x, 128, (3,3), strides=1, padding='same', activation='relu')
     x = tf.keras.layers.Conv2D(128, (3,3), strides=1, padding='same')(x)
-    s = tf.keras.layers.Conv2D(128, (1,1), strides=1, padding='same')(d3)
+    s = tf.keras.layers.Conv2D(128, (1,1), strides=1, padding='same')(d2)
     x = tf.keras.layers.Add()([x, s])
 
     x = tf.keras.layers.UpSampling2D((2,2))(x)
@@ -54,7 +54,7 @@ def build_model(input_shape):
     x = BN_activation_block(d1, 'relu')
     x = conv_BN_activation_block(x, 64, (3,3), strides=1, padding='same', activation='relu')
     x = tf.keras.layers.Conv2D(64, (3,3), strides=1, padding='same')(x)
-    s = tf.keras.layers.Conv2D(64, (1,1), strides=1, padding='same')(d3)
+    s = tf.keras.layers.Conv2D(64, (1,1), strides=1, padding='same')(d1)
     x = tf.keras.layers.Add()([x, s])
 
     x = tf.keras.layers.Conv2D(1, (1,1),strides=1,padding='same') (x)
