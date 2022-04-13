@@ -1,6 +1,9 @@
 import tensorflow as tf
 import numpy as np
-# import geopandas as gpd
+import geopandas as gpd
+from osgeo import gdal, gdalconst, osr
+import pandas as pd
+import matplotlib.pyplot as plt
 
 class InstanceNormalization(tf.keras.layers.Layer):
   #Instance Normalization Layer (https://arxiv.org/abs/1607.08022).
@@ -115,6 +118,15 @@ def BN_activation_block(inputs, activation):
     x = tf.keras.layers.Activation(activation)(x)
     return x
 
+def load_images(image_list,input_shape):
+    for image in image_list:
+        src_train = gdal.Open(image,gdalconst.GA_ReadOnly)
+        red_channel = np.array(src_train.GetRasterBand(1).ReadAsArray())
+        green_channel = np.array(src_train.GetRasterBand(2).ReadAsArray())
+        blue_channel = np.array(src_train.GetRasterBand(3).ReadAsArray())
+
+
+
 def main():
     gpus = tf.config.list_physical_devices('GPU')
     tf.config.set_visible_devices(gpus[3],'GPU')
@@ -135,6 +147,7 @@ def main():
     '''
     Load data
     normalize data (11 bit -> divide by 2047)
+    clip out data frames that are all 0 (i.e. no data)
     split data into train/validation/test, assign to files, not arrays
         e.g. Djibouti is validation, NY in train, etc
         need a lot more training data
