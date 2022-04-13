@@ -477,7 +477,7 @@ def main():
         print('Pansharpening Orthorectified Images...')
         subprocess.run(pansharpen_command,shell=True)
         print('Resampling to 0.5 m...')
-        resample_command = f'gdalwarp -q -tr 0.5 0.5 -r cubic -co "COMPRESS=LZW" -co "BIGTIFF=IF_SAFER" {tmp_pansharpened_orthorectified_full_res_file} {pansharpened_orthorectified_file}'
+        resample_command = f'gdalwarp -q -tr 0.5 0.5 -r near -co "COMPRESS=LZW" -co "BIGTIFF=IF_SAFER" {tmp_pansharpened_orthorectified_full_res_file} {pansharpened_orthorectified_file}'
         subprocess.run(resample_command,shell=True)
         subprocess.run(f'rm {tmp_pansharpened_orthorectified_full_res_file}',shell=True)
         binarize_command = f'gdal_calc.py --quiet --overwrite -A {pansharpened_orthorectified_file} --A_band=1 -B {pansharpened_orthorectified_file} --B_band=2 -C {pansharpened_orthorectified_file} --C_band=3 --outfile={tmp_binary_pansharpened_file} --calc="numpy.any((A>0,B>0,C>0))" --NoDataValue=-9999'
