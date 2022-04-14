@@ -124,6 +124,10 @@ def load_images(image_list,input_shape):
         red_channel = np.array(src_train.GetRasterBand(1).ReadAsArray())
         green_channel = np.array(src_train.GetRasterBand(2).ReadAsArray())
         blue_channel = np.array(src_train.GetRasterBand(3).ReadAsArray())
+        red_channel = red_channel.astype(float)/2047
+        green_channel = green_channel.astype(float)/2047
+        blue_channel = blue_channel.astype(float)/2047
+
 
 
 
@@ -135,8 +139,8 @@ def main():
     EPSILON = 1e-7 #Default is 1e-7
     BATCH_SIZE = 4
     main_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/'
-    training_data_dir = f'{main_dir}Training_Data/'
-    labels_dir = f'{main_dir}Labels/'
+    training_data_dir = f'{main_dir}Training_Data/subimages/'
+    labels_dir = f'{main_dir}Labels/subimages/'
     models_dir = f'{main_dir}Models/'
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE,epsilon=EPSILON)
