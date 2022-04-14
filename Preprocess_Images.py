@@ -25,8 +25,8 @@ def preprocess_image(image,input_size):
             count_str = f'{count:06d}'
             output_train_image = f'{"/".join(image.split("/")[0:-1])}/subimages/{image.split("/")[-1].replace(".tif","_"+count_str+".tif")}'
             output_label_image = f'{"/".join(label_image.split("/")[0:-1])}/subimages/{label_image.split("/")[-1].replace(".tif","_"+count_str+".tif")}'
-            warp_train_command = f'gdal_translate -q -srcwin {i*input_size[0]} {j*input_size[1]} {input_size[0]} {input_size[1]} {image} {output_train_image}'
-            warp_label_command = f'gdal_translate -q -srcwin {i*input_size[0]} {j*input_size[1]} {input_size[0]} {input_size[1]} {label_image} {output_label_image}'
+            warp_train_command = f'gdal_translate -q -a_nodata 0 -co compress=lzw -srcwin {i*input_size[0]} {j*input_size[1]} {input_size[0]} {input_size[1]} {image} {output_train_image}'
+            warp_label_command = f'gdal_translate -q -a_nodata 0 -co compress=lzw -srcwin {i*input_size[0]} {j*input_size[1]} {input_size[0]} {input_size[1]} {label_image} {output_label_image}'
             subprocess.run(warp_train_command,shell=True)
             subprocess.run(warp_label_command,shell=True)
     print('\n')
