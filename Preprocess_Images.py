@@ -18,8 +18,8 @@ def preprocess_image(image,input_size):
             count_str = f'{count:06d}'
             output_train_image = f'{"/".join(image.split("/")[0:-1])}/subimages/{image.split("/")[-1].replace(".tif","_"+count_str+".tif")}'
             output_label_image = f'{"/".join(label_image.split("/")[0:-1])}/subimages/{label_image.split("/")[-1].replace(".tif","_"+count_str+".tif")}'
-            warp_train_command = f'gdal_translate -srcwin {i*input_size[0]} {j*input_size[1]} {input_size[0]} {input_size[1]} {image} {output_train_image}'
-            warp_label_command = f'gdal_translate -srcwin {i*input_size[0]} {j*input_size[1]} {input_size[0]} {input_size[1]} {label_image} {output_label_image}'
+            warp_train_command = f'gdal_translate -q -srcwin {i*input_size[0]} {j*input_size[1]} {input_size[0]} {input_size[1]} {image} {output_train_image}'
+            warp_label_command = f'gdal_translate -q -srcwin {i*input_size[0]} {j*input_size[1]} {input_size[0]} {input_size[1]} {label_image} {output_label_image}'
             subprocess.run(warp_train_command,shell=True)
             subprocess.run(warp_label_command,shell=True)
 
@@ -28,6 +28,7 @@ def main():
     training_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/Training_Data/'
     label_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/Labels/'
     image_list = glob.glob(f'{training_dir}*.tif')
+    image_list.sort()
     input_size = (224,224)
     for image in image_list:
         preprocess_image(image,input_size)
