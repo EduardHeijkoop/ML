@@ -491,7 +491,7 @@ def main():
         
         gdf_osm.to_file(osm_shp_file)
         print('Creating Label Image...')
-        clip_label_command = f'gdalwarp -q -s_srs EPSG:{strip_epsg} -t_srs EPSG:{strip_epsg} -cutline {osm_shp_file} -crop_to_cutline {tmp_binary_pansharpened_file} {tmp_label_file}'
+        clip_label_command = f'gdalwarp -q -s_srs EPSG:{strip_epsg} -t_srs EPSG:{strip_epsg} -cutline {osm_shp_file} {tmp_binary_pansharpened_file} {tmp_label_file}'
         subprocess.run(clip_label_command,shell=True)
         if clip_flag == True:
             tmp_pansharpened_before_clipping = f'{tmp_dir}tmp_pansharpened_file.tif'
