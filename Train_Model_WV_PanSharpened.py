@@ -4,6 +4,7 @@ import geopandas as gpd
 from osgeo import gdal, gdalconst, osr
 import pandas as pd
 import matplotlib.pyplot as plt
+import glob
 
 class InstanceNormalization(tf.keras.layers.Layer):
   #Instance Normalization Layer (https://arxiv.org/abs/1607.08022).
@@ -124,11 +125,37 @@ def load_images(image_list,input_shape):
         red_channel = np.array(src_train.GetRasterBand(1).ReadAsArray())
         green_channel = np.array(src_train.GetRasterBand(2).ReadAsArray())
         blue_channel = np.array(src_train.GetRasterBand(3).ReadAsArray())
-        red_channel = red_channel.astype(float)/2047
-        green_channel = green_channel.astype(float)/2047
-        blue_channel = blue_channel.astype(float)/2047
+        red_channel = red_channel.astype(float)/2047 #11 bit -> [0,2047]
+        green_channel = green_channel.astype(float)/2047 #11 bit -> [0,2047]
+        blue_channel = blue_channel.astype(float)/2047 #11 bit -> [0,2047]
 
+def load_data(main_dir):
+    training_data_dir = f'{main_dir}Training_Data/subimages/'
+    labels_dir = f'{main_dir}Labels/subimages/'
+    training_data = glob.glob(f'{training_data_dir}*.tif')
+    training_data.sort()
+    label_data = glob.glob(f'{labels_dir}*.tif')
+    label_data.sort()
 
+    n_files = len(training_data)
+    n_val = int(np.round(0.2*n_files))
+    n_test = int(np.round(0.2*n_files))
+    n_train = int(n_files - n_val - n_test)
+
+    idx_shuffle = np.arange(n_files)
+    np.random.shuffle(idx_shuffle)
+    idx_train = idx_shuffle[:n_train]
+    idx_val = idx_shuffle[n_train:n_train+n_val]
+    idx_test = idx_shuffle[n_train+n_val:]
+
+    train_list = np.array(training_data)[idx_train.astype(int)]
+    val_list = np.array(training_data)[idx_val.astype(int)]
+    test_list = np.array(training_data)[idx_test.astype(int)]
+    train_label_list = np.array(label_data)[idx_train.astype(int)]
+    val_label_list = np.array(label_data)[idx_val.astype(int)]
+    test_label_list = np.array(label_data)[idx_test.astype(int)]
+
+    return train_list,train_label_list,val_list,val_label_list,test_list,test_label_list
 
 
 def main():
@@ -137,10 +164,8 @@ def main():
 
     LEARNING_RATE = 0.001 #Default for TF is 0.001
     EPSILON = 1e-7 #Default is 1e-7
-    BATCH_SIZE = 4
+    BATCH_SIZE = 100
     main_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/'
-    training_data_dir = f'{main_dir}Training_Data/subimages/'
-    labels_dir = f'{main_dir}Labels/subimages/'
     models_dir = f'{main_dir}Models/'
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE,epsilon=EPSILON)
@@ -150,6 +175,7 @@ def main():
     #TO DO:
     '''
     Load data
+    figure out why labels are not same size as train images
     normalize data (11 bit -> divide by 2047)
     clip out data frames that are all 0 (i.e. no data)
     split data into train/validation/test, assign to files, not arrays
@@ -160,7 +186,10 @@ def main():
 
     '''
 
+    train_list,train_label_list,val_list,val_label_list,test_list,test_label_list = load_data(main_dir)
 
+    training_batch_generator = Custom_Generator(train_list, train_label_list, BATCH_SIZE)
+    validation_batch_generator = Custom_Generator(val_list, val_label_list, BATCH_SIZE)
 
     input_shape = (224,224,3)
     model = build_resunet_model(input_shape)
