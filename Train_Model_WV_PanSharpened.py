@@ -44,7 +44,7 @@ class Custom_Generator(tf.keras.utils.Sequence):
     def __getitem__(self,idx):
         batch_x = self.image_filenames[idx * self.batch_size : (idx+1) * self.batch_size]
         batch_y = self.labels[idx * self.batch_size : (idx+1) * self.batch_size]
-        new_x,new_y = load_images(batch_x,batch_y,self.input_shape,self.__len__)
+        new_x,new_y = load_images(batch_x,batch_y,self.input_shape,self.batch_size)
         # return batch_x,batch_y
         #edit this
         return new_x,new_y
