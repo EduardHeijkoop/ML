@@ -179,7 +179,8 @@ def main():
 
     LEARNING_RATE = 0.001 #Default for TF is 0.001
     EPSILON = 1e-7 #Default is 1e-7
-    BATCH_SIZE = 100
+    BATCH_SIZE = 20
+    EPOCHS = 2
     INPUT_SHAPE = (224,224,3)
     main_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/'
     models_dir = f'{main_dir}Models/'
@@ -208,7 +209,7 @@ def main():
     model.compile(optimizer=optimizer,loss=loss,metrics=['accuracy'])
     model.fit(training_batch_generator,
         steps_per_epoch = int(len(train_list) / BATCH_SIZE),
-        epochs = 100,
+        epochs = EPOCHS,
         verbose = 1,
         validation_data = validation_batch_generator,
         validation_steps = int(len(val_list) / BATCH_SIZE)
