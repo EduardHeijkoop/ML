@@ -175,7 +175,7 @@ def load_data(main_dir):
 
 def main():
     gpus = tf.config.list_physical_devices('GPU')
-    tf.config.set_visible_devices(gpus[2,3],'GPU')
+    tf.config.set_visible_devices(gpus[2:3],'GPU')
 
     LEARNING_RATE = 0.001 #Default for TF is 0.001
     EPSILON = 1e-7 #Default is 1e-7
@@ -186,7 +186,7 @@ def main():
     models_dir = f'{main_dir}Models/'
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE,epsilon=EPSILON)
-    loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+    loss = tf.keras.losses.BinaryCrossentropy(from_logits=False)
     # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
     #TO DO:
