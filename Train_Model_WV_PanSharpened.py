@@ -32,10 +32,11 @@ class InstanceNormalization(tf.keras.layers.Layer):
         return self.scale * normalized + self.offset
 
 class Custom_Generator(tf.keras.utils.Sequence):
-    def __init__(self,image_filenames,labels,batch_size):
+    def __init__(self,image_filenames,labels,batch_size,input_shape):
         self.image_filenames = image_filenames
         self.labels = labels
         self.batch_size = batch_size
+        self.input_shape = input_shape
 
     def __len__(self):
         return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
@@ -43,7 +44,7 @@ class Custom_Generator(tf.keras.utils.Sequence):
     def __getitem__(self,idx):
         batch_x = self.image_filenames[idx * self.batch_size : (idx+1) * self.batch_size]
         batch_y = self.labels[idx * self.batch_size : (idx+1) * self.batch_size]
-        new_x,new_y = load_images(batch_x,batch_y)
+        new_x,new_y = load_images(batch_x,batch_y,self.input_shape,self.__len__)
         # return batch_x,batch_y
         #edit this
         return new_x,new_y
@@ -119,15 +120,29 @@ def BN_activation_block(inputs, activation):
     x = tf.keras.layers.Activation(activation)(x)
     return x
 
-def load_images(image_list,input_shape):
-    for image in image_list:
-        src_train = gdal.Open(image,gdalconst.GA_ReadOnly)
+def load_images(train_list,label_list,input_shape,batch_length):
+    train_stack = np.empty((batch_length,input_shape[0],input_shape[1],input_shape[2]),dtype=np.float16)
+    label_stack = np.empty((batch_length,input_shape[0],input_shape[1],1),dtype=np.float16)
+    for i in range(batch_length):
+        train_image = train_list[i]
+        label_image = label_list[i]
+        src_train = gdal.Open(train_image,gdalconst.GA_ReadOnly)
         red_channel = np.array(src_train.GetRasterBand(1).ReadAsArray())
         green_channel = np.array(src_train.GetRasterBand(2).ReadAsArray())
         blue_channel = np.array(src_train.GetRasterBand(3).ReadAsArray())
         red_channel = red_channel.astype(float)/2047 #11 bit -> [0,2047]
         green_channel = green_channel.astype(float)/2047 #11 bit -> [0,2047]
         blue_channel = blue_channel.astype(float)/2047 #11 bit -> [0,2047]
+        rgb_channel = np.dstack((red_channel,green_channel,blue_channel))
+        train_stack[i] = rgb_channel
+        src_label = gdal.Open(label_image,gdalconst.GA_ReadOnly)
+        label_channel = np.array(src_label.GetRasterBand(1).ReadAsArray())
+        label_stack[i] = label_channel
+        train_array = tf.convert_to_tensor(train_stack,dtype=tf.float16)
+        label_array = tf.convert_to_tensor(label_stack,dtype=tf.float16)
+        label_array = tf.expand_dims(label_array,axis=-1)
+    return train_array,label_array
+
 
 def load_data(main_dir):
     training_data_dir = f'{main_dir}Training_Data/subimages/'
@@ -165,6 +180,7 @@ def main():
     LEARNING_RATE = 0.001 #Default for TF is 0.001
     EPSILON = 1e-7 #Default is 1e-7
     BATCH_SIZE = 100
+    INPUT_SHAPE = (224,224,3)
     main_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/'
     models_dir = f'{main_dir}Models/'
 
@@ -174,25 +190,20 @@ def main():
 
     #TO DO:
     '''
-    Load data
-    figure out why labels are not same size as train images
-    normalize data (11 bit -> divide by 2047)
     clip out data frames that are all 0 (i.e. no data)
     split data into train/validation/test, assign to files, not arrays
         e.g. Djibouti is validation, NY in train, etc
         need a lot more training data
-    create training and validation batch generators
     select loss: binary crossentropy or sparse categorical crossentropy
-
     '''
 
     train_list,train_label_list,val_list,val_label_list,test_list,test_label_list = load_data(main_dir)
 
-    training_batch_generator = Custom_Generator(train_list, train_label_list, BATCH_SIZE)
-    validation_batch_generator = Custom_Generator(val_list, val_label_list, BATCH_SIZE)
+    
+    training_batch_generator = Custom_Generator(train_list, train_label_list, BATCH_SIZE,INPUT_SHAPE)
+    validation_batch_generator = Custom_Generator(val_list, val_label_list, BATCH_SIZE,INPUT_SHAPE)
 
-    input_shape = (224,224,3)
-    model = build_resunet_model(input_shape)
+    model = build_resunet_model(INPUT_SHAPE)
     # model.summary()
     model.compile(optimizer=optimizer,loss=loss,metrics=['accuracy'])
     model.fit(training_batch_generator,
