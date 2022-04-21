@@ -179,8 +179,8 @@ def main():
 
     LEARNING_RATE = 0.001 #Default for TF is 0.001
     EPSILON = 1e-7 #Default is 1e-7
-    BATCH_SIZE = 20
-    EPOCHS = 2
+    BATCH_SIZE = 50
+    EPOCHS = 100
     INPUT_SHAPE = (224,224,3)
     main_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/'
     models_dir = f'{main_dir}Models/'
@@ -214,7 +214,7 @@ def main():
         validation_data = validation_batch_generator,
         validation_steps = int(len(val_list) / BATCH_SIZE)
     )
-    model.save('resunet_model_wv_pansharpened')
+    model.save(f'{models_dir}resunet_model_wv_pansharpened')
 
 
 if __name__ == '__main__':
