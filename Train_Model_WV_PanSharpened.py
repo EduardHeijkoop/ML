@@ -175,7 +175,7 @@ def load_data(main_dir):
 
 def main():
     gpus = tf.config.list_physical_devices('GPU')
-    tf.config.set_visible_devices(gpus[2:3],'GPU')
+    tf.config.set_visible_devices(gpus[2:4],'GPU')
 
     LEARNING_RATE = 0.001 #Default for TF is 0.001
     EPSILON = 1e-7 #Default is 1e-7
