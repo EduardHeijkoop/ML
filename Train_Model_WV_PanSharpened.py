@@ -44,7 +44,7 @@ class Custom_Generator(tf.keras.utils.Sequence):
     def __getitem__(self,idx):
         batch_x = self.image_filenames[idx * self.batch_size : (idx+1) * self.batch_size]
         batch_y = self.labels[idx * self.batch_size : (idx+1) * self.batch_size]
-        new_x,new_y = load_images(batch_x,batch_y,self.input_shape,self.batch_size)
+        new_x,new_y = load_images(batch_x,batch_y,self.input_shape)
         # return batch_x,batch_y
         #edit this
         return new_x,new_y
@@ -120,10 +120,10 @@ def BN_activation_block(inputs, activation):
     x = tf.keras.layers.Activation(activation)(x)
     return x
 
-def load_images(train_list,label_list,input_shape,batch_length):
-    train_stack = np.empty((batch_length,input_shape[0],input_shape[1],input_shape[2]),dtype=np.float16)
-    label_stack = np.empty((batch_length,input_shape[0],input_shape[1],1),dtype=np.uint8)
-    for i in range(batch_length):
+def load_images(train_list,label_list,input_shape):
+    train_stack = np.empty((len(train_list),input_shape[0],input_shape[1],input_shape[2]),dtype=np.float16)
+    label_stack = np.empty((len(label_list),input_shape[0],input_shape[1],1),dtype=np.uint8)
+    for i in range(len(train_list)):
         train_image = train_list[i]
         label_image = label_list[i]
         src_train = gdal.Open(train_image,gdalconst.GA_ReadOnly)
