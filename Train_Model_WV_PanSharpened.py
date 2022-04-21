@@ -122,7 +122,7 @@ def BN_activation_block(inputs, activation):
 
 def load_images(train_list,label_list,input_shape,batch_length):
     train_stack = np.empty((batch_length,input_shape[0],input_shape[1],input_shape[2]),dtype=np.float16)
-    label_stack = np.empty((batch_length,input_shape[0],input_shape[1],1),dtype=np.float16)
+    label_stack = np.empty((batch_length,input_shape[0],input_shape[1],1),dtype=np.uint8)
     for i in range(batch_length):
         train_image = train_list[i]
         label_image = label_list[i]
@@ -137,7 +137,7 @@ def load_images(train_list,label_list,input_shape,batch_length):
         train_stack[i] = rgb_channel
         src_label = gdal.Open(label_image,gdalconst.GA_ReadOnly)
         label_channel = np.array(src_label.GetRasterBand(1).ReadAsArray())
-        label_stack[i] = label_channel
+        label_stack[i,:,:,0] = label_channel
         train_array = tf.convert_to_tensor(train_stack,dtype=tf.float16)
         label_array = tf.convert_to_tensor(label_stack,dtype=tf.float16)
         label_array = tf.expand_dims(label_array,axis=-1)
