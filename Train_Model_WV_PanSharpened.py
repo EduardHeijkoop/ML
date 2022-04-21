@@ -179,7 +179,7 @@ def main():
 
     LEARNING_RATE = 0.001 #Default for TF is 0.001
     EPSILON = 1e-7 #Default is 1e-7
-    BATCH_SIZE = 50
+    BATCH_SIZE = 25
     EPOCHS = 100
     INPUT_SHAPE = (224,224,3)
     main_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/'
