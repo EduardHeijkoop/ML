@@ -334,12 +334,14 @@ def main():
     parser.add_argument('--strip',help='Path to input strip.',default=None)
     parser.add_argument('--input_file',help='Path to input file with list of strips.',default='/home/eheijkoop/INPUTS/WV_Training_INPUT.txt')
     parser.add_argument('--output_dir',help='Path to output directory.',default='/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/')
+    parser.add_argument('--no_labels',help='Do not create labels.',default=False,action='store_true')
     parser.add_argument('--date_filter',help='Filter by date of input file.',default=False,action='store_true')
     args = parser.parse_args()
     strip = args.strip
     input_file = args.input_file
     date_filter = args.date_filter
     output_dir = args.output_dir
+    label_filter = not args.no_labels
     if input_file == 'None':
         input_file = None
     
@@ -442,8 +444,6 @@ def main():
         pansharpened_orthorectified_file = f'{output_training_dir}{os.path.basename(strip).split("_2m")[0]}_pansharpened_orthorectified.tif'
         tmp_binary_pansharpened_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_pansharpened_orthorectified_binary.tif'
         tmp_pansharpened_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_pansharpened_orthorectified.tif'
-        tmp_label_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_label.tif'
-        final_label_file = f'{output_labels_dir}{os.path.basename(strip).split("_2m")[0]}_label.tif'
         if np.logical_or(not os.path.isfile(pan_file),not os.path.isfile(mul_file)):
             print('ERROR! Cannot find either the specified PAN or MUL files!')
             print(f'PAN: {pan_file}')
@@ -457,16 +457,18 @@ def main():
         lon_outline_strip,lat_outline_strip = get_lonlat_geometry(outline_strip)
         lon_outline_imd,lat_outline_imd = get_lonlat_geometry(outline_xml_select)
         lon_intersection_strip_imd,lat_intersection_strip_imd = get_lonlat_geometry(intersection_strip_imd)
-        lon_min_osm = np.nanmin(lon_intersection_strip_imd)
-        lon_max_osm = np.nanmax(lon_intersection_strip_imd)
-        lat_min_osm = np.nanmin(lat_intersection_strip_imd)
-        lat_max_osm = np.nanmax(lat_intersection_strip_imd)
-        osm_shp_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_OSM_buildings_{strip_epsg}.shp'
-        print('Downloading OSM Buildings...')
-        osm_data = get_osm_buildings(lon_min_osm,lon_max_osm,lat_min_osm,lat_max_osm)
-        gdf_osm = overpy_to_gdf(osm_data)
-        gdf_osm = gdf_osm.buffer(0)
-
+        if label_filter == True:
+            lon_min_osm = np.nanmin(lon_intersection_strip_imd)
+            lon_max_osm = np.nanmax(lon_intersection_strip_imd)
+            lat_min_osm = np.nanmin(lat_intersection_strip_imd)
+            lat_max_osm = np.nanmax(lat_intersection_strip_imd)
+            print('Downloading OSM Buildings...')
+            osm_shp_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_OSM_buildings_{strip_epsg}.shp'
+            osm_data = get_osm_buildings(lon_min_osm,lon_max_osm,lat_min_osm,lat_max_osm)
+            gdf_osm = overpy_to_gdf(osm_data)
+            gdf_osm = gdf_osm.buffer(0)
+            gdf_osm = gdf_osm.to_crs(f'EPSG:{strip_epsg}')
+            gdf_osm.to_file(osm_shp_file)
         orthorectify_pan_command = f'gdalwarp -q -co "COMPRESS=LZW" -co "BIGTIFF=IF_SAFER" -co "TILED=YES" -t_srs EPSG:{strip_epsg} -r cubic -et 0.01 -rpc -to "RPC_DEM={strip}" {pan_file} {pan_orthorectified_file}'
         orthorectify_mul_command = f'gdalwarp -q -co "COMPRESS=LZW" -co "BIGTIFF=IF_SAFER" -co "TILED=YES" -t_srs EPSG:{strip_epsg} -r cubic -et 0.01 -rpc -to "RPC_DEM={strip}" {mul_file} {mul_orthorectified_file}'
         pansharpen_command = f'gdal_pansharpen.py -q -b 5 -b 3 -b 2 -co compress=lzw -co bigtiff=if_safer -bitdepth 11 {pan_orthorectified_file} {mul_orthorectified_file} {tmp_pansharpened_orthorectified_full_res_file}'
@@ -480,49 +482,53 @@ def main():
         resample_command = f'gdalwarp -q -tr 0.5 0.5 -r near -co "COMPRESS=LZW" -co "BIGTIFF=IF_SAFER" {tmp_pansharpened_orthorectified_full_res_file} {pansharpened_orthorectified_file}'
         subprocess.run(resample_command,shell=True)
         subprocess.run(f'rm {tmp_pansharpened_orthorectified_full_res_file}',shell=True)
-        binarize_command = f'gdal_calc.py --quiet --overwrite -A {pansharpened_orthorectified_file} --A_band=1 -B {pansharpened_orthorectified_file} --B_band=2 -C {pansharpened_orthorectified_file} --C_band=3 --outfile={tmp_binary_pansharpened_file} --calc="numpy.any((A>0,B>0,C>0))" --NoDataValue=-9999'
-        subprocess.run(binarize_command,shell=True)
-        gdf_osm = gdf_osm.to_crs(f'EPSG:{strip_epsg}')
+        if label_filter == True:
+            tmp_label_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_label.tif'
+            binarize_command = f'gdal_calc.py --quiet --overwrite -A {pansharpened_orthorectified_file} --A_band=1 -B {pansharpened_orthorectified_file} --B_band=2 -C {pansharpened_orthorectified_file} --C_band=3 --outfile={tmp_binary_pansharpened_file} --calc="numpy.any((A>0,B>0,C>0))" --NoDataValue=-9999'
+            subprocess.run(binarize_command,shell=True)
+            print('Creating Label Image...')
+            clip_label_command = f'gdalwarp -q -s_srs EPSG:{strip_epsg} -t_srs EPSG:{strip_epsg} -cutline {osm_shp_file} {tmp_binary_pansharpened_file} {tmp_label_file}'
+            subprocess.run(clip_label_command,shell=True)
+    
 
         #need to incorporate date_filter here!
         if date_filter == True:
             #do something with the gdf to remove dates outside of the date range
             print('')
         
-        gdf_osm.to_file(osm_shp_file)
-        print('Creating Label Image...')
-        clip_label_command = f'gdalwarp -q -s_srs EPSG:{strip_epsg} -t_srs EPSG:{strip_epsg} -cutline {osm_shp_file} {tmp_binary_pansharpened_file} {tmp_label_file}'
-        subprocess.run(clip_label_command,shell=True)
         if clip_flag == True:
             tmp_pansharpened_before_clipping = f'{tmp_dir}tmp_pansharpened_file.tif'
-            tmp_label_before_clipping = f'{tmp_dir}tmp_label_file.tif'
             move_pansharpened_for_clipping_command = f'mv {pansharpened_orthorectified_file} {tmp_pansharpened_before_clipping}'
-            move_label_for_clipping_command = f'mv {tmp_label_file} {tmp_label_before_clipping}'
-            subprocess.run(move_pansharpened_for_clipping_command,shell=True)
-            subprocess.run(move_label_for_clipping_command,shell=True)
             print('Clipping Pansharpened Image...')
+            subprocess.run(move_pansharpened_for_clipping_command,shell=True)
             clip_pansharpened_command = f'gdalwarp -q -s_srs EPSG:{strip_epsg} -t_srs EPSG:{strip_epsg} -cutline {clip_shp} -crop_to_cutline {tmp_pansharpened_before_clipping} {pansharpened_orthorectified_file}'
             subprocess.run(clip_pansharpened_command,shell=True)
-            print('Clipping Label Image...')
-            clip_label_command = f'gdalwarp -q -s_srs EPSG:{strip_epsg} -t_srs EPSG:{strip_epsg} -cutline {clip_shp} -crop_to_cutline {tmp_label_before_clipping} {final_label_file}'
-            subprocess.run(clip_label_command,shell=True)
-            subprocess.run(f'rm {clip_shp.replace(".shp",".*")}',shell=True)
-            subprocess.run(f'rm {tmp_label_before_clipping}',shell=True)
             subprocess.run(f'rm {tmp_pansharpened_before_clipping}',shell=True)
-        else:
+            if label_filter == True:
+                final_label_file = f'{output_labels_dir}{os.path.basename(strip).split("_2m")[0]}_label.tif'
+                tmp_label_before_clipping = f'{tmp_dir}tmp_label_file.tif'
+                move_label_for_clipping_command = f'mv {tmp_label_file} {tmp_label_before_clipping}'
+                print('Clipping Label Image...')
+                subprocess.run(move_label_for_clipping_command,shell=True)
+                clip_label_command = f'gdalwarp -q -s_srs EPSG:{strip_epsg} -t_srs EPSG:{strip_epsg} -cutline {clip_shp} -crop_to_cutline {tmp_label_before_clipping} {final_label_file}'
+                subprocess.run(clip_label_command,shell=True)
+                subprocess.run(f'rm {clip_shp.replace(".shp",".*")}',shell=True)
+                subprocess.run(f'rm {tmp_label_before_clipping}',shell=True)
+        elif label_filter == True:
             move_label_command = f'mv {tmp_label_file} {final_label_file}'
             subprocess.run(move_label_command,shell=True)
 
         move_pansharpened_command = f'mv {pansharpened_orthorectified_file} {tmp_pansharpened_file}'
-        move_label_command = f'mv {final_label_file} {tmp_label_file}'
         compress_pansharpened_command = f'gdal_translate -q -co compress=lzw -co bigtiff=if_safer {tmp_pansharpened_file} {pansharpened_orthorectified_file}'
-        compress_label_command = f'gdal_translate -q -co compress=lzw -co bigtiff=if_safer {tmp_label_file} {final_label_file}'
         subprocess.run(move_pansharpened_command,shell=True)
-        subprocess.run(move_label_command,shell=True)
         subprocess.run(compress_pansharpened_command,shell=True)
-        subprocess.run(compress_label_command,shell=True)
         subprocess.run(f'rm {tmp_pansharpened_file}',shell=True)
-        subprocess.run(f'rm {tmp_label_file}',shell=True)
+        if label_filter == True:
+            move_label_command = f'mv {final_label_file} {tmp_label_file}'
+            compress_label_command = f'gdal_translate -q -co compress=lzw -co bigtiff=if_safer {tmp_label_file} {final_label_file}'
+            subprocess.run(move_label_command,shell=True)
+            subprocess.run(compress_label_command,shell=True)
+            subprocess.run(f'rm {tmp_label_file}',shell=True)
 
         shutil.rmtree(unzipped_dir)
         print('')
