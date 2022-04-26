@@ -6,6 +6,7 @@ import sys
 import subprocess
 import argparse
 from osgeo import gdal,gdalconst,osr,ogr
+from sklearn.metrics import fowlkes_mallows_score
 import overpy
 import shapely
 import datetime
@@ -386,7 +387,10 @@ def main():
 
     for i in range(len(strips_input)):
         strip = os.path.abspath(strips_input[i])
-        clip_flag = np.any(~np.isnan([df_input.clip_lon_min[i],df_input.clip_lon_max[i],df_input.clip_lat_min[i],df_input.clip_lat_max[i]]))
+        if df_input is not None:
+            clip_flag = np.any(~np.isnan([df_input.clip_lon_min[i],df_input.clip_lon_max[i],df_input.clip_lat_min[i],df_input.clip_lat_max[i]]))
+        else:
+            clip_flag = False
         if clip_flag == True:
             clip_lon_min = df_input.clip_lon_min[i]
             clip_lon_max = df_input.clip_lon_max[i]
