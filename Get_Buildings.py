@@ -54,7 +54,7 @@ def predict_buildings(model,img,input_shape=(224,224)):
             n_progressbar = (count) / n_images_total
             sys.stdout.write("[%-20s] %d%%" % ('='*int(20*n_progressbar), 100*n_progressbar))
             sys.stdout.flush()
-            train_segment = train_array[:int(j*input_shape[0]/2):int(input_shape[0]/2+(j+1)*input_shape[0]/2),int(i*input_shape[1]/2):int(input_shape[1]/2 + (i+1)*input_shape[1]/2),:]
+            train_segment = train_array[:,int(j*input_shape[0]/2):int(input_shape[0]/2+(j+1)*input_shape[0]/2),int(i*input_shape[1]/2):int(input_shape[1]/2 + (i+1)*input_shape[1]/2),:]
             prediction_segment = model.predict(train_segment).squeeze()
             prediction[j*input_shape[0]:(j+1)*input_shape[0],i*input_shape[1]:(i+1)*input_shape[1]] = np.max((prediction_segment,prediction[j*input_shape[0]:(j+1)*input_shape[0],i*input_shape[1]:(i+1)*input_shape[1]]))
     prediction = prediction[:img_size[0],:img_size[1]]
