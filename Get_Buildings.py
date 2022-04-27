@@ -44,7 +44,7 @@ def predict_buildings(model,img,input_shape=(224,224)):
     train_array = tf.expand_dims(tf.convert_to_tensor(train_stack),axis=0)
     n_images_x = int(train_array.shape[2]/input_shape[1])
     n_images_y = int(train_array.shape[1]/input_shape[0])
-    n_images_total = n_images_x * n_images_y
+    n_images_total = (2*n_images_x-1) * (2*n_images_y-1)
     count = 0
     print('Predicting buildings...')
     for i in range(2*n_images_x-1):
