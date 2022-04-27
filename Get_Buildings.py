@@ -56,7 +56,7 @@ def predict_buildings(model,img,input_shape=(224,224)):
             sys.stdout.flush()
             train_segment = train_array[:,int(j*input_shape[0]/2):int(input_shape[0]/2+(j+1)*input_shape[0]/2),int(i*input_shape[1]/2):int(input_shape[1]/2 + (i+1)*input_shape[1]/2),:]
             prediction_segment = model.predict(train_segment).squeeze()
-            prediction[j*input_shape[0]:(j+1)*input_shape[0],i*input_shape[1]:(i+1)*input_shape[1]] = np.max((prediction_segment,prediction[j*input_shape[0]:(j+1)*input_shape[0],i*input_shape[1]:(i+1)*input_shape[1]]),axis=0)
+            prediction[int(j*input_shape[0]/2):int(input_shape[0]/2+(j+1)*input_shape[0]/2),int(i*input_shape[1]/2):int(input_shape[1]/2 + (i+1)*input_shape[1]/2),:] = np.max((prediction_segment,prediction[int(j*input_shape[0]/2):int(input_shape[0]/2+(j+1)*input_shape[0]/2),int(i*input_shape[1]/2):int(input_shape[1]/2 + (i+1)*input_shape[1]/2),:]),axis=0)
     prediction = prediction[:img_size[0],:img_size[1]]
     return prediction
 
