@@ -4,6 +4,7 @@ from osgeo import gdal, osr, gdalconst
 import argparse
 import sys
 import warnings
+import scipy.ndimage
 
 
 def load_image(img,input_shape=(224,224)):
@@ -60,6 +61,11 @@ def predict_buildings(model,img,input_shape=(224,224)):
     prediction = prediction[:img_size[0],:img_size[1]]
     return prediction
 
+def flood_fill(img_binary,erosion_struc=np.ones((3,3))):
+    img_binary_eroded = scipy.ndimage.binary_dilation(img_binary)
+    img_binary_floodfill = scipy.ndimage.binary_erosion(img_binary_eroded,structure=erosion_struc)
+    return img_binary_floodfill
+
 def main():
     warnings.simplefilter(action='ignore')
     parser = argparse.ArgumentParser()
@@ -85,13 +91,14 @@ def main():
     src = gdal.Open(img,gdalconst.GA_ReadOnly)
     prediction = predict_buildings(model,img)
     prediction_binary = (prediction > THRESHOLD).astype(int)
+    prediction_binary_floodfill = flood_fill(prediction_binary,np.ones((5,5)))
 
     # Create output raster
     driver = gdal.GetDriverByName('GTiff')
-    out_raster = driver.Create(img.replace('.tif','_prediction.tif').replace('Training_Data','Prediction'),prediction_binary.shape[1],prediction_binary.shape[0],1,gdal.GDT_Byte)
+    out_raster = driver.Create(img.replace('.tif','_prediction.tif').replace('Training_Data','Prediction'),prediction_binary_floodfill.shape[1],prediction_binary_floodfill.shape[0],1,gdal.GDT_Byte)
     out_raster.SetGeoTransform(src.GetGeoTransform())
     out_raster.SetProjection(src.GetProjection())
-    out_raster.GetRasterBand(1).WriteArray(prediction_binary)
+    out_raster.GetRasterBand(1).WriteArray(prediction_binary_floodfill)
     out_raster.FlushCache()
     out_raster = None
 
