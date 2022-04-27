@@ -47,17 +47,16 @@ def predict_buildings(model,img,input_shape=(224,224)):
     n_images_total = n_images_x * n_images_y
     count = 0
     print('Predicting buildings...')
-    for i in range(n_images_x):
-        print(f'{i}/{n_images_x}')
-        for j in range(n_images_y):
+    for i in range(2*n_images_x-1):
+        for j in range(2*n_images_y-1):
             count = count+1
             sys.stdout.write('\r')
             n_progressbar = (count) / n_images_total
             sys.stdout.write("[%-20s] %d%%" % ('='*int(20*n_progressbar), 100*n_progressbar))
             sys.stdout.flush()
-            train_segment = train_array[:,j*input_shape[0]:(j+1)*input_shape[0],i*input_shape[1]:(i+1)*input_shape[1],:]
+            train_segment = train_array[:int(j*input_shape[0]/2):int(input_shape[0]/2+(j+1)*input_shape[0]/2),int(i*input_shape[1]/2):int(input_shape[1]/2 + (i+1)*input_shape[1]/2),:]
             prediction_segment = model.predict(train_segment).squeeze()
-            prediction[j*input_shape[0]:(j+1)*input_shape[0],i*input_shape[1]:(i+1)*input_shape[1]] = prediction_segment
+            prediction[j*input_shape[0]:(j+1)*input_shape[0],i*input_shape[1]:(i+1)*input_shape[1]] = np.max((prediction_segment,prediction[j*input_shape[0]:(j+1)*input_shape[0],i*input_shape[1]:(i+1)*input_shape[1]]))
     prediction = prediction[:img_size[0],:img_size[1]]
     return prediction
 
@@ -67,6 +66,8 @@ def main():
     parser.add_argument('--model',help='Path to input ML model for building detection.')
     parser.add_argument('--image',help='Path to input image to run building detection on.')
     
+    gpus = tf.config.list_physical_devices('GPU')
+    tf.config.set_visible_devices(gpus[3],'GPU')
     '''
     input_model = '/media/heijkoop/DATA/Dropbox/TU/PhD/Machine_Learning/ResUNet_Building_Detection/resunet_model_wv_pansharpened'
     img = '/home/heijkoop/Desktop/tmp/Building_Detection/WV03_20200402_104001005A87A100_104001005B0CCA00_pansharpened_orthorectified.tif'
