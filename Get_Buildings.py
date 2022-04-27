@@ -96,5 +96,5 @@ def main():
     out_raster = None
 
 
-if '__name__' == '__main__':
+if __name__ == '__main__':
     main()
