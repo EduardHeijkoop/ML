@@ -352,6 +352,8 @@ def main():
     '''
 
     tmp_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/tmp/'
+    if output_dir[-1] != '/':
+        output_dir += '/'
     output_training_dir = f'{output_dir}Training_Data/'
     output_labels_dir = f'{output_dir}Labels/'
     check_dir_exists(output_training_dir)
