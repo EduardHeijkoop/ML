@@ -340,21 +340,12 @@ def make_label(training_image,clip_shp,unzipped_dir,output_labels_dir):
     gdf_osm = gdf_osm.buffer(0)
     gdf_osm = gdf_osm.to_crs(f'EPSG:{training_image_epsg}')
     gdf_osm.to_file(osm_shp_file)
-
     print('Creating Label Image...')
     binarize_command = f'gdal_calc.py --quiet --overwrite -A {training_image} --A_band=1 -B {training_image} --B_band=2 -C {training_image} --C_band=3 --outfile={tmp_binary_pansharpened_file} --calc="numpy.any((A>0,B>0,C>0))" --NoDataValue=-9999'
     clip_label_command = f'gdalwarp -q -s_srs EPSG:{training_image_epsg} -t_srs EPSG:{training_image_epsg} -cutline {osm_shp_file} {tmp_binary_pansharpened_file} {tmp_label_file}'
+    compress_label_command = f'gdal_translate -q -co compress=lzw -co bigtiff=if_safer {tmp_label_file} {final_label_file}'
     subprocess.run(binarize_command,shell=True)
     subprocess.run(clip_label_command,shell=True)
-    if clip_shp is not None:
-        print('Clipping Label Image...')
-        tmp_label_file_clipped = tmp_label_file.replace('.tif','_clipped.tif')
-        clip_label_command = f'gdalwarp -q -s_srs EPSG:{training_image_epsg} -t_srs EPSG:{training_image_epsg} -cutline {clip_shp} -crop_to_cutline {tmp_label_file} {tmp_label_file_clipped}'
-        move_label_command = f'mv {tmp_label_file_clipped} {tmp_label_file}'
-        subprocess.run(clip_label_command,shell=True)
-        subprocess.run(move_label_command,shell=True)
-
-    compress_label_command = f'gdal_translate -q -co compress=lzw -co bigtiff=if_safer {tmp_label_file} {final_label_file}'
     subprocess.run(compress_label_command,shell=True)
     return final_label_file
 
