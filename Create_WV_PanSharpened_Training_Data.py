@@ -447,7 +447,7 @@ def main():
         pan_orthorectified_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_pan_orthorectified.tif'
         mul_orthorectified_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_mul_orthorectified.tif'
         tmp_pansharpened_orthorectified_full_res_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_pansharpened_orthorectified_full_res.tif'
-        pansharpened_orthorectified_file = f'{output_training_dir}{os.path.basename(strip).split("_2m")[0]}_pansharpened_orthorectified.tif'
+        pansharpened_orthorectified_file = f'{output_training_dir}{location_name}_{os.path.basename(strip).split("_2m")[0]}_pansharpened_orthorectified.tif'
         tmp_binary_pansharpened_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_pansharpened_orthorectified_binary.tif'
         tmp_pansharpened_file = f'{unzipped_dir}{os.path.basename(strip).split("_2m")[0]}_pansharpened_orthorectified.tif'
         if np.logical_or(not os.path.isfile(pan_file),not os.path.isfile(mul_file)):
@@ -511,7 +511,7 @@ def main():
             subprocess.run(clip_pansharpened_command,shell=True)
             subprocess.run(f'rm {tmp_pansharpened_before_clipping}',shell=True)
             if label_filter == True:
-                final_label_file = f'{output_labels_dir}{os.path.basename(strip).split("_2m")[0]}_label.tif'
+                final_label_file = f'{output_labels_dir}{location_name}_{os.path.basename(strip).split("_2m")[0]}_label.tif'
                 tmp_label_before_clipping = f'{tmp_dir}tmp_label_file.tif'
                 move_label_for_clipping_command = f'mv {tmp_label_file} {tmp_label_before_clipping}'
                 print('Clipping Label Image...')
