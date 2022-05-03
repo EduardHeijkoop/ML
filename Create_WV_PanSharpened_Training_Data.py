@@ -326,7 +326,7 @@ def check_dir_exists(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
 
-def make_label(training_image,clip_shp,unzipped_dir,output_labels_dir,tmp_dir):
+def make_label(training_image,clip_shp,unzipped_dir,output_labels_dir):
     image_basename = os.path.basename(training_image).split("_pansharpened_orthorectified")[0]
     tmp_label_file = f'{unzipped_dir}{image_basename}_label.tif'
     tmp_binary_pansharpened_file = f'{unzipped_dir}{image_basename}_pansharpened_orthorectified_binary.tif'
@@ -530,7 +530,7 @@ def main():
         subprocess.run(compress_pansharpened_command,shell=True)
         subprocess.run(f'rm {tmp_pansharpened_file}',shell=True)
         if label_filter == True:
-            final_label_file = make_label(pansharpened_orthorectified_file,clip_shp,unzipped_dir,output_labels_dir,tmp_dir)
+            final_label_file = make_label(pansharpened_orthorectified_file,clip_shp,unzipped_dir,output_labels_dir)
 
         shutil.rmtree(unzipped_dir)
         print('')
