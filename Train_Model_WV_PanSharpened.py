@@ -5,6 +5,7 @@ from osgeo import gdal, gdalconst, osr
 import pandas as pd
 import matplotlib.pyplot as plt
 import glob
+import datetime
 
 class InstanceNormalization(tf.keras.layers.Layer):
   #Instance Normalization Layer (https://arxiv.org/abs/1607.08022).
@@ -199,10 +200,15 @@ def main():
     '''
 
     train_list,train_label_list,val_list,val_label_list,test_list,test_label_list = load_data(main_dir)
-
-    
     training_batch_generator = Custom_Generator(train_list, train_label_list, BATCH_SIZE,INPUT_SHAPE)
     validation_batch_generator = Custom_Generator(val_list, val_label_list, BATCH_SIZE,INPUT_SHAPE)
+
+    now = datetime.datetime.now()
+    callbacks = [
+        tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5),
+        tf.keras.callbacks.CSVLogger(f'{models_dir}Train_Val_Accuracy_Epochs_{now.strftime("%Y%m%d")}.txt', separator=',', append=False),
+        tf.keras.callbacks.ModelCheckpoint(f'{models_dir}Model_{now.strftime("%Y%m%d")}.h5', monitor='val_loss', save_best_only=True)
+        ]
 
     model = build_resunet_model(INPUT_SHAPE)
     # model.summary()
@@ -212,7 +218,8 @@ def main():
         epochs = EPOCHS,
         verbose = 1,
         validation_data = validation_batch_generator,
-        validation_steps = int(len(val_list) / BATCH_SIZE)
+        validation_steps = int(len(val_list) / BATCH_SIZE),
+        callbacks=callbacks
     )
     model.save(f'{models_dir}resunet_model_wv_pansharpened')
 
