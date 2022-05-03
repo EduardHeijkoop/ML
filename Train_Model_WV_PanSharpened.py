@@ -144,7 +144,7 @@ def load_images(train_list,label_list,input_shape):
         label_array = tf.expand_dims(label_array,axis=-1)
     return train_array,label_array
 
-
+'''
 def load_data(main_dir):
     training_data_dir = f'{main_dir}Training_Data/subimages/'
     labels_dir = f'{main_dir}Labels/subimages/'
@@ -172,23 +172,78 @@ def load_data(main_dir):
     test_label_list = np.array(label_data)[idx_test.astype(int)]
 
     return train_list,train_label_list,val_list,val_label_list,test_list,test_label_list
+'''
+
+def load_data(main_dir,N_PATCHES):
+    training_data_dir = f'{main_dir}Training_Data/subimages/'
+    labels_dir = f'{main_dir}Labels/subimages/'
+    unique_locs = sorted(glob.glob(f'{training_data_dir}*000001.tif'))
+    n_locs = len(unique_locs)
+    n_val = int(np.round(0.2*n_locs))
+    n_test = int(np.round(0.2*n_locs))
+    n_train = int(n_locs - n_val - n_test)
+    
+    idx_shuffle = np.arange(n_locs)
+    np.random.shuffle(idx_shuffle)
+    idx_train = idx_shuffle[:n_train]
+    idx_val = idx_shuffle[n_train:n_train+n_val]
+    idx_test = idx_shuffle[n_train+n_val:]
+
+    train_locs = np.array(unique_locs)[idx_train.astype(int)]
+    val_locs = np.array(unique_locs)[idx_val.astype(int)]
+    test_locs = np.array(unique_locs)[idx_test.astype(int)]
+
+    train_list = np.empty([0,1],dtype=str)
+    val_list = np.empty([0,1],dtype=str)
+    test_list = np.empty([0,1],dtype=str)
+    train_label_list = np.empty([0,1],dtype=str)
+    val_label_list = np.empty([0,1],dtype=str)
+    test_label_list = np.empty([0,1],dtype=str)
+
+    for loc in train_locs:
+        tmp_train_list,tmp_train_label_list = get_images(loc,N_PATCHES)
+        train_list = np.append(train_list,tmp_train_list)
+        train_label_list = np.append(train_label_list,tmp_train_label_list)
+    for loc in val_locs:
+        tmp_val_list,tmp_val_label_list = get_images(loc,N_PATCHES)
+        val_list = np.append(val_list,tmp_val_list)
+        val_label_list = np.append(val_label_list,tmp_val_label_list)
+    for loc in test_locs:
+        tmp_test_list,tmp_test_label_list = get_images(loc,N_PATCHES)
+        test_list = np.append(test_list,tmp_test_list)
+        test_label_list = np.append(test_label_list,tmp_test_label_list)
+    return train_list,train_label_list,val_list,val_label_list,test_list,test_label_list
+
+def get_images(loc,N_PATCHES):
+    n_images = len(glob.glob(loc.replace('000001.tif','*.tif')))
+    idx_loc = np.sort(np.random.choice(n_images,N_PATCHES,replace=False))
+    tmp_list = np.asarray([loc.replace('_000001.tif',f'_{i:06d}.tif') for i in idx_loc])
+    tmp_label_list = np.asarray([t.replace('Training_Data','Labels').replace('_pansharpened_orthorectified_','_label_') for t in tmp_list])
+    return tmp_list,tmp_label_list
+
+
 
 
 def main():
     gpus = tf.config.list_physical_devices('GPU')
-    # tf.config.set_visible_devices(gpus[2:4],'GPU')
+    tf.config.set_visible_devices(gpus[2:4],'GPU')
 
     LEARNING_RATE = 0.001 #Default for TF is 0.001
     EPSILON = 1e-7 #Default is 1e-7
     BATCH_SIZE = 20
     EPOCHS = 100
     INPUT_SHAPE = (224,224,3)
+    N_PATCHES = 2000
+    SEED = 16
+
     main_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/'
     models_dir = f'{main_dir}Models/'
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE,epsilon=EPSILON)
     loss = tf.keras.losses.BinaryCrossentropy(from_logits=False)
     # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+    np.random.seed(seed=SEED)
 
     #TO DO:
     '''
@@ -199,7 +254,7 @@ def main():
     select loss: binary crossentropy or sparse categorical crossentropy
     '''
 
-    train_list,train_label_list,val_list,val_label_list,test_list,test_label_list = load_data(main_dir)
+    train_list,train_label_list,val_list,val_label_list,test_list,test_label_list = load_data(main_dir,N_PATCHES)
     training_batch_generator = Custom_Generator(train_list, train_label_list, BATCH_SIZE,INPUT_SHAPE)
     validation_batch_generator = Custom_Generator(val_list, val_label_list, BATCH_SIZE,INPUT_SHAPE)
 
