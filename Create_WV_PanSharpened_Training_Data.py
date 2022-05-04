@@ -514,6 +514,7 @@ def main():
             clip_pansharpened_command = f'gdalwarp -q -s_srs EPSG:{strip_epsg} -t_srs EPSG:{strip_epsg} -cutline {clip_shp} -crop_to_cutline {tmp_pansharpened_before_clipping} {pansharpened_orthorectified_file}'
             subprocess.run(clip_pansharpened_command,shell=True)
             subprocess.run(f'rm {tmp_pansharpened_before_clipping}',shell=True)
+            subprocess.run(f'rm {clip_shp.replace(".shp",".*")}',shell=True)
 
         move_pansharpened_command = f'mv {pansharpened_orthorectified_file} {tmp_pansharpened_file}'
         compress_pansharpened_command = f'gdal_translate -q -co compress=lzw -co bigtiff=if_safer {tmp_pansharpened_file} {pansharpened_orthorectified_file}'
