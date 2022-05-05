@@ -347,6 +347,9 @@ def make_label(training_image,unzipped_dir,output_labels_dir):
     subprocess.run(binarize_command,shell=True)
     subprocess.run(clip_label_command,shell=True)
     subprocess.run(compress_label_command,shell=True)
+    subprocess.run(f'rm {osm_shp_file.replace(".shp",".*")}',shell=True)
+    subprocess.run(f'rm {tmp_label_file}',shell=True)
+    subprocess.run(f'rm {tmp_binary_pansharpened_file}',shell=True)
     return final_label_file
 
 
