@@ -276,7 +276,7 @@ def main():
         validation_steps = int(len(val_list) / BATCH_SIZE),
         callbacks=callbacks
     )
-    model.save(f'{models_dir}resunet_model_wv_pansharpened')
+    model.save(f'{models_dir}resunet_model_wv_pansharpened_{now.strftime("%Y%m%d")}')
 
 
 if __name__ == '__main__':
