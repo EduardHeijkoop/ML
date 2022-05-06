@@ -193,6 +193,16 @@ def load_data(main_dir,N_PATCHES):
     val_locs = np.array(unique_locs)[idx_val.astype(int)]
     test_locs = np.array(unique_locs)[idx_test.astype(int)]
 
+    print('Training Locations:')
+    [print(loc.split('/')[-1].split('_WV')[0]) for loc in np.sort(train_locs)]
+    print('\n')
+    print('Validation Locations:')
+    [print(loc.split('/')[-1].split('_WV')[0]) for loc in np.sort(val_locs)]
+    print('\n')
+    print('Test Locations:')
+    [print(loc.split('/')[-1].split('_WV')[0]) for loc in np.sort(test_locs)]
+    print('\n')
+
     train_list = np.empty([0,1],dtype=str)
     val_list = np.empty([0,1],dtype=str)
     test_list = np.empty([0,1],dtype=str)
@@ -235,6 +245,7 @@ def main():
     INPUT_SHAPE = (224,224,3)
     N_PATCHES = 2000
     SEED = 16
+    PATIENCE = 10
 
     main_dir = '/BhaltosMount/Bhaltos/EDUARD/Projects/Machine_Learning/WV_PanSharpened/'
     models_dir = f'{main_dir}Models/'
@@ -260,7 +271,7 @@ def main():
 
     now = datetime.datetime.now()
     callbacks = [
-        tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5),
+        tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=PATIENCE),
         tf.keras.callbacks.CSVLogger(f'{models_dir}Train_Val_Accuracy_Epochs_{now.strftime("%Y%m%d")}.txt', separator=',', append=False),
         tf.keras.callbacks.ModelCheckpoint(f'{models_dir}Model_{now.strftime("%Y%m%d")}.h5', monitor='val_loss', save_best_only=True)
         ]
