@@ -195,13 +195,13 @@ def load_data(main_dir,N_PATCHES):
 
     print('Training Locations:')
     [print(loc.split('/')[-1].split('_WV')[0]) for loc in np.sort(train_locs)]
-    print('\n')
+    print('')
     print('Validation Locations:')
     [print(loc.split('/')[-1].split('_WV')[0]) for loc in np.sort(val_locs)]
-    print('\n')
+    print('')
     print('Test Locations:')
     [print(loc.split('/')[-1].split('_WV')[0]) for loc in np.sort(test_locs)]
-    print('\n')
+    print('')
 
     train_list = np.empty([0,1],dtype=str)
     val_list = np.empty([0,1],dtype=str)
