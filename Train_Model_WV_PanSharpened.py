@@ -241,7 +241,7 @@ def main():
     LEARNING_RATE = 0.001 #Default for TF is 0.001
     EPSILON = 1e-7 #Default is 1e-7
     BATCH_SIZE = 20
-    EPOCHS = 100
+    EPOCHS = 50
     INPUT_SHAPE = (224,224,3)
     N_PATCHES = 2000
     SEED = 16
@@ -271,9 +271,9 @@ def main():
 
     now = datetime.datetime.now()
     callbacks = [
-        tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=PATIENCE),
+        tf.keras.callbacks.EarlyStopping(monitor='val_loss', mode='min',patience=PATIENCE),
         tf.keras.callbacks.CSVLogger(f'{models_dir}Train_Val_Accuracy_Epochs_{now.strftime("%Y%m%d")}.txt', separator=',', append=False),
-        tf.keras.callbacks.ModelCheckpoint(f'{models_dir}Model_{now.strftime("%Y%m%d")}.h5', monitor='val_loss', save_best_only=True)
+        tf.keras.callbacks.ModelCheckpoint(f'{models_dir}Model_{now.strftime("%Y%m%d")}.h5', monitor='val_loss', save_best_only=False)
         ]
 
     model = build_resunet_model(INPUT_SHAPE)
