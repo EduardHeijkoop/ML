@@ -5,7 +5,7 @@ import argparse
 import sys
 import warnings
 import scipy.ndimage
-
+import subprocess
 
 def load_image(img,input_shape=(224,224)):
     '''
@@ -94,13 +94,20 @@ def main():
     prediction_binary_floodfill = flood_fill(prediction_binary,np.ones((5,5)))
 
     # Create output raster
+    output_file = img.replace('.tif','_prediction.tif').replace('Training_Data','Prediction')
+    output_file_compressed = output_file.replace('.tif','_LZW.tif')
     driver = gdal.GetDriverByName('GTiff')
-    out_raster = driver.Create(img.replace('.tif','_prediction.tif').replace('Training_Data','Prediction'),prediction_binary_floodfill.shape[1],prediction_binary_floodfill.shape[0],1,gdal.GDT_Byte)
+    out_raster = driver.Create(output_file,prediction_binary_floodfill.shape[1],prediction_binary_floodfill.shape[0],1,gdal.GDT_Byte)
     out_raster.SetGeoTransform(src.GetGeoTransform())
     out_raster.SetProjection(src.GetProjection())
     out_raster.GetRasterBand(1).WriteArray(prediction_binary_floodfill)
     out_raster.FlushCache()
     out_raster = None
+
+    compress_command = f'gdal_translate -co compress=LZW -co BIGTIFF=IF_SAFER {output_file} {output_file_compressed}'
+    move_command = f'mv {output_file_compressed} {output_file}'
+    subprocess.run(compress_command,shell=True)
+    subprocess.run(move_command,shell=True)
 
 
 if __name__ == '__main__':
